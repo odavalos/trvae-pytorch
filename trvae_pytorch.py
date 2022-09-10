@@ -12,6 +12,8 @@ import sys
 sys.path.append("../")
 import trvae
 import numpy as np
+import scipy.sparse as s_sparse
+from scipy.sparse import csr_matrix
 
 
 # creating the parser
@@ -32,6 +34,9 @@ args = parser.parse_args()
 
 # reading in dataset
 adata = sc.read_h5ad(args.in_path)
+
+# make input array float32
+adata.X = csr_matrix(adata.X, dtype=np.float32)
 
 # column names for batch and celltype information
 condition_key = args.condition_key
@@ -61,9 +66,17 @@ model = trvae.CVAE(adata.shape[1],
 trainer = trvae.Trainer(model, adata)
 trainer.train_trvae(args.n_epochs, args.batch_size, early_patience=30)
 
+# check if matrix is sparse
+if s_sparse.issparse(adata.X):
+    print("Input data matrix is sparse");
+    print("Converting matrix to dense");
+    adata.X = adata.X.toarray()
+
+else:
+    print("Input data matrix is dense")
 
 # get the latent space data
-latent_y = model.get_y(adata.X.A, model.label_encoder.transform(adata.obs[condition_key])) # get the latent space
+latent_y = model.get_y(adata.X, model.label_encoder.transform(adata.obs[condition_key])) # get the latent space
 adata_latent = sc.AnnData(latent_y)
 
 # add original metadata to the latent space adata object
@@ -74,7 +87,7 @@ adata_latent.obs[condition_key] = adata.obs[condition_key].tolist() # add batch 
 adata_latent.write_h5ad(args.out_path + args.out_name + '_trvaep_latent.h5ad')
 
 # get the expression corrected data
-batch_removed = model.predict(x=adata.X.todense(), y=adata.obs[condition_key].tolist(), target=target_cond_key)
+batch_removed = model.predict(x=adata.X, y=adata.obs[condition_key].tolist(), target=target_cond_key)
 corrected_data = sc.AnnData(batch_removed)
 # add original metadata to the corrected adata object
 corrected_data.obs[celltype_key] = adata.obs[celltype_key].tolist()
