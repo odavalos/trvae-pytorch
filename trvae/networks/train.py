@@ -146,9 +146,9 @@ class Trainer:
                 break
 
             if epoch % self.val_check == 0 and epoch != 0:
-                print("Epoch {:02d}, Loss_valid: {}, rec_loss_valid: {},"
-                      " KL_loss_valid: {}, MMD_loss:  {} ".format(
-                    epoch, valid_loss, valid_rec, valid_kl, valid_mmd))
+                print("Epoch {:02d}, Loss_valid: {:9.4f}, rec_loss_valid: {:9.4f},"
+                      " KL_loss_valid: {:9.4f}, MMD_loss:  {:9.4f} ".format(
+                          epoch, valid_loss, valid_rec, valid_kl, valid_mmd.item()))
         self.model.eval()
 
     def train(self, n_epochs=100, batch_size=256, early_patience=15):
